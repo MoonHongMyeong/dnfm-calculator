@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DNFM CALCULATOR</title>
-    <script src="./script.js" defer></script>
+    <script src="./script.js" type="module" defer></script>
     <link rel="stylesheet" href="reset.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -31,19 +31,17 @@
     <div class="flex-table">
         <div class="flex-row flex-header">
             <div class="flex-cell">테라가격</div>
-            <div class="flex-cell">구매아이템</div>
-            <div class="flex-cell">평균가 기준 금액</div>
-            <div class="flex-cell">평균가-5% 기준 금액</div>
-            <div class="flex-cell">평균가+5% 기준 금액</div>
+            <div class="flex-cell">평균가 기준</div>
+            <div class="flex-cell">평균가-5% 기준</div>
+            <div class="flex-cell">평균가+5% 기준</div>
         </div>
         <div class="flex-row">
             <div class="flex-cell">
-                <input type="number" id="tera-price" oninput="updateSellingItem()">
+                <input type="number" id="target-tera">
             </div>
-            <div class="flex-cell" id="selling-item-name"></div>
-            <div class="flex-cell" id="average-price"></div>
-            <div class="flex-cell" id="minus5-price"></div>
-            <div class="flex-cell" id="plus5-price"></div>
+            <div class="flex-cell" id="average-item-list"></div>
+            <div class="flex-cell" id="minus5-item-list"></div>
+            <div class="flex-cell" id="plus5-item-list"></div>
         </div>
     </div>
     
