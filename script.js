@@ -7,58 +7,30 @@ const TERA_TICK = 0.05;
 
 
 const initRender = (target, items) => {
-    items.forEach(item => {
-        const row = document.createElement('div');
-        row.classList.add('flex-row');
-        
-        const name = document.createElement('div');
-        name.classList.add('flex-cell');
-        name.textContent = item.name;
-        row.appendChild(name);
+    const html = items.map(item => {
+        `<div class="flex-row">
+            <div class="flex-cell">${item.name}</div>
+            <div class="flex-cell">${item.cash}</div>
+            <div class="flex-cell">
+                <input type="number" id="tera-${item.id}">
+            </div>
+            <div class="flex-cell minus5" id="minus5-${item.id}"></div>
+            <div class="flex-cell current" id="current-${item.id}"></div>
+            <div class="flex-cell plus5" id="plus5-${item.id}"></div>
+        </div>`
+    }).join('');
 
-        const cash = document.createElement('div');
-        cash.classList.add('flex-cell');
-        cash.textContent = item.cash;
-        row.appendChild(cash);
-        target.appendChild(row);
-
-        const tera = document.createElement('div');
-        tera.classList.add('flex-cell');
-        
-        const teraInput = document.createElement('input');
-        teraInput.type = 'number';
-        teraInput.id = `tera-${item.id}`;
-        teraInput.oninput = (e) => {
-            displayTeraPerWon(item.id, e.target.value);
-        }
-
-        tera.appendChild(teraInput);
-        row.appendChild(tera);
-
-        const minus5 = document.createElement('div');
-        minus5.classList.add('flex-cell');
-        minus5.classList.add('minus5');
-        minus5.id = `minus5-${item.id}`;
-        row.appendChild(minus5);
-
-        const current = document.createElement('div');
-        current.classList.add('flex-cell');
-        current.classList.add('current');
-        current.id = `current-${item.id}`;
-        row.appendChild(current);
-
-        const plus5 = document.createElement('div');
-        plus5.classList.add('flex-cell');
-        plus5.classList.add('plus5');
-        plus5.id = `plus5-${item.id}`;
-        row.appendChild(plus5);
-
-        target.appendChild(row);
-    });    
+    target.innerHTML = html;
 }
 
-const calculateTeraPerWon = (auctionPrice, cash) => {
-    const result = auctionPrice * (1 - MARKET_FEE) / cash;
+const onAuctionPriceInput = (item, auctionPrice) => {
+    const teraPerWon = getTeraPerWonRate(item, auctionPrice);
+    updateItemWithTeraRate(item, auctionPrice, teraPerWon);
+    renderTeraRate(item, auctionPrice, teraPerWon);
+}
+
+const getTeraPerWonRate = (item, auctionPrice) => {
+    const result = auctionPrice * (1 - MARKET_FEE) / item.cash;
     return {
         minus5: result * (1 - TERA_TICK),
         current: result,
@@ -66,28 +38,33 @@ const calculateTeraPerWon = (auctionPrice, cash) => {
     };
 }
 
-const displayTeraPerWon = (id, auctionPrice) => {
-    const item = items.find(item => item.id === Number(id));
+const updateItemWithTeraRate = (item, auctionPrice, teraPerWon) => {
+    items[item.id].minus5 = teraPerWon.minus5;
+    items[item.id].current = teraPerWon.current;
+    items[item.id].plus5 = teraPerWon.plus5;
+    items[item.id].receiveTera = auctionPrice * (1 - MARKET_FEE)
+}
+
+const renderTeraRate = (item, auctionPrice, teraPerWon) => {
     if (!item) return;
-    const cash = Number(item.cash);
-    const price = Number(auctionPrice);
-    if (!price) {
-        // 입력값이 없으면 결과 초기화
-        document.querySelector(`#minus5-${id}`).textContent = '';
-        document.querySelector(`#current-${id}`).textContent = '';
-        document.querySelector(`#plus5-${id}`).textContent = '';
+
+    // 자주 바뀌는 노드 캐싱
+    const textNodes = {
+        minus5 : document.querySelector(`#minus5-${item.id}`),
+        current : document.querySelector(`#current-${item.id}`),
+        plus5 : document.querySelector(`#plus5-${item.id}`)
+    }
+    
+    // 입력값이 없으면 결과 초기화
+    if (!auctionPrice || isNaN(auctionPrice)) {
+        textNodes.minus5.textContent = ``;
+        textNodes.current.textContent = ``;
+        textNodes.plus5.textContent = ``;
         return;
     }
-    const { minus5, current, plus5 } = calculateTeraPerWon(price, cash);
-    // 데이터셋에 넣기
-    items[id].perMinus5 = minus5;
-    items[id].perCurrent = current;
-    items[id].perPlus5 = plus5;
-    items[id].receiveTera = Math.ceil(auctionPrice * (1 - MARKET_FEE));// ceil(올림)일지 round(반올림)일지 모르겠음.
-
-    document.querySelector(`#minus5-${id}`).textContent = `1 : ${(minus5).toFixed(2)}`;
-    document.querySelector(`#current-${id}`).textContent = `1 : ${(current).toFixed(2)}`;
-    document.querySelector(`#plus5-${id}`).textContent = `1 : ${(plus5).toFixed(2)}`;
+    textNodes.minus5.textContent = `1 : ${(teraPerWon.minus5).toFixed(2)}`;
+    textNodes.current.textContent = `1 : ${(teraPerWon.current).toFixed(2)}`;
+    textNodes.plus5.textContent = `1 : ${(teraPerWon.plus5).toFixed(2)}`;
 }
 
 
@@ -178,9 +155,16 @@ const displayCashNeededForTera = (calculateResult) => {
     list.innerHTML = html;
 }
 
+const addInputEvents = () => {
+    for ( let i=0; i < items.length; i++ ) {
+        document.querySelector(`#tera-${i}`).addEventListener('input', (e) => onAuctionPriceInput(items[i], e.target.value));
+    }
+    document.querySelector('#target-tera').addEventListener('input', calculateCashNeededForTera);
+}
+
 const init = () => {
     initRender(main, items);
-    document.querySelector('#target-tera').addEventListener('input', calculateCashNeededForTera);
+    addInputEvents();
 }
 
 init();
