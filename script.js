@@ -5,7 +5,15 @@ const main = document.querySelector('#main');
 const MARKET_FEE = 0.1;
 const TERA_TICK = 0.05;
 
+/** @typedef {import('./types').Item} Item */
+/** @typedef {import('./types').TeraPerWon} TeraPerWon */
 
+/**
+ * @name 초기_랜더링
+ * @description 처음 로드되면 실행되는 랜더링 함수.
+ * @param {Element} target 
+ * @param {items} items 
+ */
 const initRender = (target, items) => {
     const html = items.map(item => {
         `<div class="flex-row">
@@ -23,12 +31,24 @@ const initRender = (target, items) => {
     target.innerHTML = html;
 }
 
+/**
+ * @name {} 경매장 테라 가격 input 이벤트 함수
+ * @event
+ * @param {Item} item
+ * @param {Number} auctionPrice
+ */
 const onAuctionPriceInput = (item, auctionPrice) => {
     const teraPerWon = getTeraPerWonRate(item, auctionPrice);
     updateItemWithTeraRate(item, auctionPrice, teraPerWon);
     renderTeraRate(item, auctionPrice, teraPerWon);
 }
 
+/**
+ * @name {} 경매장 태라 가격 원당 비율 계산 함수
+ * @param {Item} item
+ * @param {number} auctionPrice
+ * @returns {TeraPerWon}
+ */
 const getTeraPerWonRate = (item, auctionPrice) => {
     const result = auctionPrice * (1 - MARKET_FEE) / item.cash;
     return {
@@ -38,13 +58,24 @@ const getTeraPerWonRate = (item, auctionPrice) => {
     };
 }
 
+/**
+ * @name {} 경매장 태라 가격 원당 비율 계산 함수
+ * @param {Item} item
+ * @param {number} auctionPrice
+ * @param {TeraPerWon} teraPerWon
+ */
 const updateItemWithTeraRate = (item, auctionPrice, teraPerWon) => {
     items[item.id].minus5 = teraPerWon.minus5;
     items[item.id].current = teraPerWon.current;
     items[item.id].plus5 = teraPerWon.plus5;
     items[item.id].receiveTera = auctionPrice * (1 - MARKET_FEE)
 }
-
+/**
+ * @name {} 테라당 원의 비율을 랜더링해주는 함수
+ * @param {Item} item
+ * @param {number} auctionPrice
+ * @param {TeraPerWon} teraPerWon
+ */
 const renderTeraRate = (item, auctionPrice, teraPerWon) => {
     if (!item) return;
 
@@ -155,6 +186,9 @@ const displayCashNeededForTera = (calculateResult) => {
     list.innerHTML = html;
 }
 
+/**
+ * @name 이벤트 주입 함수
+ */
 const addInputEvents = () => {
     for ( let i=0; i < items.length; i++ ) {
         document.querySelector(`#tera-${i}`).addEventListener('input', (e) => onAuctionPriceInput(items[i], e.target.value));
