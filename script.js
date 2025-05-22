@@ -158,12 +158,14 @@ const getGreedyPurchasePlan = (rawTargetData) => {
         }
 
         if (bestCandidate) {
-            const bestCandidateItem = purchasePlan.find((element) => element.name == bestCandidate.name);
+            const bestCandidateItem = items.find((element) => element.name == bestCandidate.name);
             bestCandidateItem.count += bestCandidate.count;
             totalTera += bestCandidate.addedTera;
+            if (!purchasePlan.find(element => element.name == bestCandidate.name)) {
+                purchasePlan.push(bestCandidateItem);
+            }
         }
     }
-
     return purchasePlan;
 }
 
@@ -183,7 +185,7 @@ const renderPurchasePlan = (purchasePlan) => {
     let totalCost = 0;
 
     html = sortedPlan.map(item => {
-        const tera = item.receiveTera * item.count;
+        const tera = Math.round(item.receiveTera) * item.count;
         const cost = item.cash * item.count;
         totalTera += tera;
         totalCost += cost;
