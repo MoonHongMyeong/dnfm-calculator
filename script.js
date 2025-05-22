@@ -15,18 +15,18 @@ const TERA_TICK = 0.05;
  * @param {items} items 
  */
 const initRender = (target, items) => {
-    const html = items.map(item => {
-        `<div class="flex-row">
-            <div class="flex-cell">${item.name}</div>
-            <div class="flex-cell">${item.cash}</div>
-            <div class="flex-cell">
-                <input type="number" id="tera-${item.id}">
-            </div>
-            <div class="flex-cell minus5" id="minus5-${item.id}"></div>
-            <div class="flex-cell current" id="current-${item.id}"></div>
-            <div class="flex-cell plus5" id="plus5-${item.id}"></div>
-        </div>`
-    }).join('');
+    const html = items.map(item => 
+            `<div class="flex-row">
+                <div class="flex-cell">${item.name}</div>
+                <div class="flex-cell">${item.cash}</div>
+                <div class="flex-cell">
+                    <input type="number" id="tera-${item.id}">
+                </div>
+                <div class="flex-cell minus5" id="minus5-${item.id}"></div>
+                <div class="flex-cell current" id="current-${item.id}"></div>
+                <div class="flex-cell plus5" id="plus5-${item.id}"></div>
+            </div>`
+    ).join('');
 
     target.innerHTML = html;
 }
@@ -65,9 +65,9 @@ const getTeraPerWonRate = (item, auctionPrice) => {
  * @param {TeraPerWon} teraPerWon
  */
 const updateItemWithTeraRate = (item, auctionPrice, teraPerWon) => {
-    items[item.id].minus5 = teraPerWon.minus5;
-    items[item.id].current = teraPerWon.current;
-    items[item.id].plus5 = teraPerWon.plus5;
+    items[item.id].perMinus5 = teraPerWon.minus5;
+    items[item.id].perCurrent = teraPerWon.current;
+    items[item.id].perPlus5 = teraPerWon.plus5;
     items[item.id].receiveTera = auctionPrice * (1 - MARKET_FEE)
 }
 /**
@@ -98,26 +98,27 @@ const renderTeraRate = (item, auctionPrice, teraPerWon) => {
     textNodes.plus5.textContent = `1 : ${(teraPerWon.plus5).toFixed(2)}`;
 }
 
-
-const calculateCashNeededForTera = (e) => {
-    let targetTera = Number(e.target.value);
-    const result = [];
-    const sortedItems = items.sort((a, b) => {
-        return b.perCurrent - a.perCurrent;
-    });
-
+/**
+ * @name {} 그리드를 이용한 구매 계획
+ * @param {Number} rawTargetData 
+ * @returns {Item[]} purchasePlan
+ */
+const getGreedyPurchasePlan = (rawTargetData) => {
+    let targetTera = Number(rawTargetData);
+    const sortedItemsOrderByRate = items.sort((a, b) => b.perCurrent - a.perCurrent);
+    
+    const purchasePlan = [];
     let totalTera = 0;
     const minimumReceiveTera = Math.min(...items.map((x) => x.receiveTera));
 
     // 어떤 아이템을 구매해도 의미없음.
     if ( targetTera < minimumReceiveTera) {
-        console.log(targetTera, sortedItems[sortedItems.length -1].receiveTera)
         document.querySelector('#average-item-list').textContent = ``;
         return;
     }
 
-    // greedy 방식으로 targetTera의 이하 근사값을 구한다.
-    for (const product of sortedItems) {
+    // 1. greedy 방식으로 targetTera의 이하 근사값을 구한다.
+    for (const product of sortedItemsOrderByRate) {
         if (totalTera >= targetTera) break;
 
         const remainingTera = targetTera - totalTera;
@@ -125,17 +126,17 @@ const calculateCashNeededForTera = (e) => {
 
         if (maxCount > 0) {
             product['count'] = maxCount;
-            result.push(product);
+            purchasePlan.push(product);
             totalTera += maxCount * product.receiveTera;
         }
     }
-    
-    // 추가 보정
+
+    // 2. 그리디 방식으로 이하 최적해에서 추가 보정
     if (totalTera < targetTera) {
         const remainingTera = targetTera - totalTera;
         let bestCandidate; //최적 후보
 
-        for (const product of sortedItems) {
+        for (const product of sortedItemsOrderByRate) {
             const count = Math.ceil(remainingTera / product.receiveTera);
             const addedTera = count * product.receiveTera;
             const overAmount = addedTera - remainingTera;
@@ -157,43 +158,68 @@ const calculateCashNeededForTera = (e) => {
         }
 
         if (bestCandidate) {
-            const bestCandidateItem = result.find((element) => element.name == bestCandidate.name);
+            const bestCandidateItem = purchasePlan.find((element) => element.name == bestCandidate.name);
             bestCandidateItem.count += bestCandidate.count;
             totalTera += bestCandidate.addedTera;
         }
     }
 
-    displayCashNeededForTera(result);
+    return purchasePlan;
 }
 
-const displayCashNeededForTera = (calculateResult) => {
-    calculateResult.sort((a, b) => (b.receiveTera * b.count) - (a.receiveTera * a.count));
+/**
+ * @name {} 구매계획 랜더링
+ * @param {Item[]} purchasePlan 
+ */
+const renderPurchasePlan = (purchasePlan) => {
+    const container = document.querySelector(`#average-item-list`);
 
-    const list = document.querySelector(`#average-item-list`);
+    if (!purchasePlan || purchasePlan.length === 0) return;
+    
+    const sortedPlan = purchasePlan.sort((a, b) => (b.receiveTera * b.count) - (a.receiveTera * a.count));
+
     let html = ``;
     let totalTera = 0;
     let totalCost = 0;
 
-    for ( let i=0; i < calculateResult.length; i++ ) {
-        html += `<p>${calculateResult[i].name} : ${calculateResult[i].count} (${calculateResult[i].receiveTera * calculateResult[i].count})</p>`;
-        totalTera += calculateResult[i].receiveTera * calculateResult[i].count;
-        totalCost += calculateResult[i].cash * calculateResult[i].count;
-    }
+    html = sortedPlan.map(item => {
+        const tera = item.receiveTera * item.count;
+        const cost = item.cash * item.count;
+        totalTera += tera;
+        totalCost += cost;
+        return `<p>${item.name} : ${item.count}개 (${tera})</p>`;
+    }).join('') + `
+    <p>총 테라 : ${totalTera} 테라</p>
+    <p>총 비용 : ${totalCost} 원</p>`;
 
-    html += `<p>${totalTera} 테라</p>`;
-    html += `<p>${totalCost} 원</p>`
+    container.innerHTML = html;
+}
 
-    list.innerHTML = html;
+/**
+ * @name {} 목표테라 input 입력 이벤트 함수 
+ * @event
+ * @param {*} inputEvent 
+ */
+const onNeededForTeraInput = (e) => {
+    const purchasePlan = getGreedyPurchasePlan(e.target.value);
+    renderPurchasePlan(purchasePlan);
 }
 
 /**
  * @name 이벤트 주입 함수
  */
 const addInputEvents = () => {
-    for ( let i=0; i < items.length; i++ ) {
-        document.querySelector(`#tera-${i}`).addEventListener('input', (e) => onAuctionPriceInput(items[i], e.target.value));
+    items.forEach((item) => {
+        const input = document.querySelector(`#tera-${item.id}`);
+        if (input) {
+            input.addEventListener('input', (e) => onAuctionPriceInput(item, e.target.value));
+        }
+    });
+
+    const teraInput = document.querySelector('#target-tera');
+    if (teraInput) {
+        teraInput.addEventListener('input', onNeededForTeraInput);
     }
-    document.querySelector('#target-tera').addEventListener('input', calculateCashNeededForTera);
 }
 
 const init = () => {
@@ -201,4 +227,7 @@ const init = () => {
     addInputEvents();
 }
 
+console.log([25041, 62911, 784329]);
+
 init();
+
