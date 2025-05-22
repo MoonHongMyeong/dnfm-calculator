@@ -123,11 +123,12 @@ const getGreedyPurchasePlan = (rawTargetData) => {
 
         const remainingTera = targetTera - totalTera;
         const maxCount = Math.floor(remainingTera / product.receiveTera);
+        const finalCount = getAvailableCount(product, maxCount);
 
-        if (maxCount > 0) {
-            product['count'] = maxCount;
+        if (finalCount > 0) {
+            product['count'] = finalCount;
             purchasePlan.push(product);
-            totalTera += maxCount * product.receiveTera;
+            totalTera += finalCount * product.receiveTera;
         }
     }
 
@@ -137,10 +138,11 @@ const getGreedyPurchasePlan = (rawTargetData) => {
         let bestCandidate; //최적 후보
 
         for (const product of sortedItemsOrderByRate) {
-            const count = Math.ceil(remainingTera / product.receiveTera);
-            const addedTera = count * product.receiveTera;
+            const maxCount = Math.ceil(remainingTera / product.receiveTera);
+            const finalCount = getAvailableCount(product, maxCount);
+            const addedTera = finalCount * product.receiveTera;
             const overAmount = addedTera - remainingTera;
-            const purchaseCost = count * product.cash;
+            const purchaseCost = finalCount * product.cash;
 
             if (!bestCandidate 
                 || overAmount < bestCandidate.overAmount 
@@ -149,7 +151,7 @@ const getGreedyPurchasePlan = (rawTargetData) => {
                 ) {
                 bestCandidate = {
                     name: product.name,
-                    count,
+                    finalCount,
                     addedTera,
                     overAmount,
                     purchaseCost
@@ -159,13 +161,14 @@ const getGreedyPurchasePlan = (rawTargetData) => {
 
         if (bestCandidate) {
             const bestCandidateItem = items.find((element) => element.name == bestCandidate.name);
-            bestCandidateItem.count += bestCandidate.count;
+            bestCandidateItem.count += bestCandidate.finalCount;
             totalTera += bestCandidate.addedTera;
             if (!purchasePlan.find(element => element.name == bestCandidate.name)) {
                 purchasePlan.push(bestCandidateItem);
             }
         }
     }
+    console.log(purchasePlan);
     return purchasePlan;
 }
 
@@ -205,6 +208,16 @@ const renderPurchasePlan = (purchasePlan) => {
 const onNeededForTeraInput = (e) => {
     const purchasePlan = getGreedyPurchasePlan(e.target.value);
     renderPurchasePlan(purchasePlan);
+}
+
+/**
+ * @name {} 일일 구매제한 유효성 체크
+ * @param {Item} item 
+ * @param {Number} maxCount 
+ * @returns {Number} availablePurchaseCount
+ */
+const getAvailableCount = (item, maxCount) => {
+    return Math.min(item.limit ?? Infinity, maxCount);
 }
 
 /**
