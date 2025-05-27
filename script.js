@@ -33,7 +33,7 @@ const initRender = (target, items) => {
 }
 
 /**
- * @name {} 경매장 테라 가격 input 이벤트 함수
+ * @name 경매장_테라_가격_input이벤트_함수
  * @event
  * @param {Item} item
  * @param {Number} auctionPrice
@@ -45,7 +45,7 @@ const onAuctionPriceInput = (item, auctionPrice) => {
 }
 
 /**
- * @name {} 경매장 태라 가격 원당 비율 계산 함수
+ * @name 경매장_테라_가격_원당_비율_계산_함수
  * @param {Item} item
  * @param {number} auctionPrice
  * @returns {teraPerWon}
@@ -59,7 +59,7 @@ const getteraPerWonRate = (item, auctionPrice) => {
 }
 
 /**
- * @name {} 경매장 태라 가격 비율, 실수령가 업데이트 함수.
+ * @name 경매장_테라가격_비율,실수령가_업데이트_함수
  * @param {Item} item
  * @param {number} auctionPrice
  * @param {teraPerWon} teraPerWon
@@ -74,7 +74,7 @@ const updateItemWithTeraRate = (item, auctionPrice, teraPerWon) => {
 }
 
 /**
- * @name {} 테라당 원의 비율을 랜더링해주는 함수
+ * @name 테라당_원의_비율을_랜더링해주는_함수
  * @param {Item} item
  * @param {number} auctionPrice
  * @param {teraPerWon} teraPerWon
@@ -102,8 +102,9 @@ const renderTeraRate = (item, auctionPrice) => {
 }
 
 /**
- * @name {} 그리디를 이용한 구매 계획
+ * @name 그리디를_이용한_구매_계획
  * @param {Number} rawTargetData 
+ * @param {String} scenarioId
  * @returns {Item[]} purchasePlan
  */
 const getGreedyPurchasePlan = (rawTargetData, scenarioId) => {
@@ -116,9 +117,6 @@ const getGreedyPurchasePlan = (rawTargetData, scenarioId) => {
         (a, b) => Number(b[teraRateKey]) - Number(a[teraRateKey])
     );
 
-    console.log(sortedItemsOrderByRate)
-    
-    
     const minimumTeraAfterFee = Math.min(...items.map((item) => item[teraAfterFeeKey]));
     // 어떤 아이템을 구매해도 의미없음.
     if ( targetTera < minimumTeraAfterFee) {
@@ -191,7 +189,7 @@ const getGreedyPurchasePlan = (rawTargetData, scenarioId) => {
 }
 
 /**
- * @name {} 구매계획 랜더링
+ * @name 구매계획_랜더링
  * @param {Item[]} purchasePlan 
  */
 const renderPurchasePlan = (purchasePlan, scenario) => {
@@ -234,7 +232,7 @@ const planScenarios = [
 ];
 
 /**
- * @name {} 목표테라 input 입력 이벤트 함수 
+ * @name 목표테라_input입력_이벤트_함수 
  * @event
  * @param {*} inputEvent 
  */
@@ -246,7 +244,7 @@ const onNeededForTeraInput = (e) => {
 }
 
 /**
- * @name {} 일일 구매제한 유효성 체크
+ * @name 일일_구매제한_유효성_체크
  * @param {Item} item 
  * @param {Number} maxCount 
  * @returns {Number} availablePurchaseCount
@@ -256,7 +254,7 @@ const getAvailableCount = (item, maxCount) => {
 }
 
 /**
- * @name 이벤트 주입 함수
+ * @name 이벤트_주입_함수
  */
 const addInputEvents = () => {
     items.forEach((item) => {
@@ -278,5 +276,3 @@ const init = () => {
 }
 
 init();
-
-console.log([23789, 59766, 784329]);
