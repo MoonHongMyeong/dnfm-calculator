@@ -3,16 +3,33 @@ import items from './items.js';
 const main = document.querySelector('#main');
 
 const MARKET_FEE = 0.1;
-const TERA_TICK = 0.05;
-
-/** @typedef {import('./types').Item} Item */
-/** @typedef {import('./types').TeraPerWon} TeraPerWon */
+const PRICE_TICK = 0.05;
 
 /**
- * @name 초기_랜더링
- * @description 처음 로드되면 실행되는 랜더링 함수.
- * @param {Element} target 
- * @param {items} items 
+ * @typedef {Object} Item
+ * @property {Number} id
+ * @property {String} name
+ * @property {Number} cash
+ * @property {Number} limit
+ * @property {Number} current
+ * @property {Number} plus
+ * @property {Number} minus
+ */
+
+/**
+ * @typedef {Object} Scenario
+ * @property { "current" | "plus" | "minus" } id
+ * @property {Element} container
+ */
+
+/**
+ * @typedef { "current" | "plus" | "minus" } ScenarioId
+ */ 
+
+/**
+ * @name 처음 로드되면 실행되는 랜더링 함수.
+ * @param {Element} target
+ * @param {Item[]} items
  */
 const initRender = (target, items) => {
     const html = items.map(item => 
@@ -22,9 +39,9 @@ const initRender = (target, items) => {
                 <div class="flex-cell">
                     <input type="number" id="tera-${item.id}">
                 </div>
-                <div class="flex-cell minus5" id="minus5-${item.id}"></div>
-                <div class="flex-cell current" id="current-${item.id}"></div>
-                <div class="flex-cell plus5" id="plus5-${item.id}"></div>
+                <div class="flex-cell" id="minus-${item.id}"></div>
+                <div class="flex-cell" id="current-${item.id}"></div>
+                <div class="flex-cell" id="plus-${item.id}"></div>
             </div>`
     ).join('');
 
@@ -32,196 +49,166 @@ const initRender = (target, items) => {
 }
 
 /**
- * @name {} 경매장 테라 가격 input 이벤트 함수
- * @event
+ * @name {} 1원당 테라 비율 계산 함수 (소수점 2자리까지)
  * @param {Item} item
- * @param {Number} auctionPrice
+ * @param {Number} price
+ * @returns {Number}
  */
-const onAuctionPriceInput = (item, auctionPrice) => {
-    const teraPerWon = getTeraPerWonRate(item, auctionPrice);
-    updateItemWithTeraRate(item, auctionPrice, teraPerWon);
-    renderTeraRate(item, auctionPrice, teraPerWon);
+const calculateTeraPerWon = (item, price) => {
+    return Math.floor(price * (1 - MARKET_FEE) / item.cash * 100) / 100;
 }
 
 /**
- * @name {} 경매장 태라 가격 원당 비율 계산 함수
+ * @name {} item 비율 업데이트
  * @param {Item} item
- * @param {number} auctionPrice
- * @returns {TeraPerWon}
+ * @param {Number} avg
+ * @param {Number} plus
+ * @param {Number} minus
  */
-const getTeraPerWonRate = (item, auctionPrice) => {
-    const result = auctionPrice * (1 - MARKET_FEE) / item.cash;
-    return {
-        minus5: result * (1 - TERA_TICK),
-        current: result,
-        plus5: result * (1 + TERA_TICK)
-    };
+const updateItemRate = (item, avg, plus, minus) => {
+    item.current = avg;
+    item.plus = plus;
+    item.minus = minus;
 }
 
 /**
- * @name {} 경매장 태라 가격 원당 비율 계산 함수
+ * @name {} 경매장 테라 비율 랜더링
  * @param {Item} item
- * @param {number} auctionPrice
- * @param {TeraPerWon} teraPerWon
  */
-const updateItemWithTeraRate = (item, auctionPrice, teraPerWon) => {
-    items[item.id].perMinus5 = teraPerWon.minus5;
-    items[item.id].perCurrent = teraPerWon.current;
-    items[item.id].perPlus5 = teraPerWon.plus5;
-    items[item.id].receiveTera = auctionPrice * (1 - MARKET_FEE)
-}
-/**
- * @name {} 테라당 원의 비율을 랜더링해주는 함수
- * @param {Item} item
- * @param {number} auctionPrice
- * @param {TeraPerWon} teraPerWon
- */
-const renderTeraRate = (item, auctionPrice, teraPerWon) => {
-    if (!item) return;
-
-    // 자주 바뀌는 노드 캐싱
-    const textNodes = {
-        minus5 : document.querySelector(`#minus5-${item.id}`),
-        current : document.querySelector(`#current-${item.id}`),
-        plus5 : document.querySelector(`#plus5-${item.id}`)
-    }
+const renderTeraPerWon = (item) => {
+    const current = document.querySelector(`#current-${item.id}`);
+    const plus = document.querySelector(`#plus-${item.id}`);
+    const minus = document.querySelector(`#minus-${item.id}`);
     
-    // 입력값이 없으면 결과 초기화
-    if (!auctionPrice || isNaN(auctionPrice)) {
-        textNodes.minus5.textContent = ``;
-        textNodes.current.textContent = ``;
-        textNodes.plus5.textContent = ``;
-        return;
-    }
-    textNodes.minus5.textContent = `1 : ${(teraPerWon.minus5).toFixed(2)}`;
-    textNodes.current.textContent = `1 : ${(teraPerWon.current).toFixed(2)}`;
-    textNodes.plus5.textContent = `1 : ${(teraPerWon.plus5).toFixed(2)}`;
+    current.textContent = `1 : ${item.current}`;
+    plus.textContent = `1 : ${item.plus}`;
+    minus.textContent = `1 : ${item.minus}`;
 }
 
 /**
- * @name {} 그리드를 이용한 구매 계획
- * @param {Number} rawTargetData 
- * @returns {Item[]} purchasePlan
+ * @name {} 목표 테라 구매 계획 랜더링
+ * @param {Item[]} purchasePlan
+ * @param {Scenario} scenario
  */
-const getGreedyPurchasePlan = (rawTargetData) => {
-    let targetTera = Number(rawTargetData);
-    const sortedItemsOrderByRate = items.sort((a, b) => b.perCurrent - a.perCurrent);
-    
-    const purchasePlan = [];
-    let totalTera = 0;
-    const minimumReceiveTera = Math.min(...items.map((x) => x.receiveTera));
+const renderPurchasePlan = (purchasePlan, scenario) => {
+    if ( !purchasePlan || purchasePlan.length === 0 || !scenario.container ) return;
 
-    // 어떤 아이템을 구매해도 의미없음.
-    if ( targetTera < minimumReceiveTera) {
-        document.querySelector('#average-item-list').textContent = ``;
-        return;
-    }
+    const container = scenario.container;
+    const sortedPlan = purchasePlan.sort(
+        (a, b) => (b[scenario.id] * b.cash * b.count) - (a[scenario.id] * a.cash * a.count)
+    );
 
-    // 1. greedy 방식으로 targetTera의 이하 근사값을 구한다.
-    for (const product of sortedItemsOrderByRate) {
-        if (totalTera >= targetTera) break;
-
-        const remainingTera = targetTera - totalTera;
-        const maxCount = Math.floor(remainingTera / product.receiveTera);
-        const finalCount = getAvailableCount(product, maxCount);
-
-        if (finalCount > 0) {
-            product['count'] = finalCount;
-            purchasePlan.push(product);
-            totalTera += finalCount * product.receiveTera;
-        }
-    }
-
-    // 2. 그리디 방식으로 이하 최적해에서 추가 보정
-    if (totalTera < targetTera) {
-        const remainingTera = targetTera - totalTera;
-        let bestCandidate; //최적 후보
-
-        for (const product of sortedItemsOrderByRate) {
-            const maxCount = Math.ceil(remainingTera / product.receiveTera);
-            const finalCount = getAvailableCount(product, maxCount);
-            const addedTera = finalCount * product.receiveTera;
-            const overAmount = addedTera - remainingTera;
-            const purchaseCost = finalCount * product.cash;
-
-            if (!bestCandidate 
-                || overAmount < bestCandidate.overAmount 
-                || (overAmount === bestCandidate.overAmount 
-                    && purchaseCost < bestCandidate.purchaseCost)
-                ) {
-                bestCandidate = {
-                    name: product.name,
-                    finalCount,
-                    addedTera,
-                    overAmount,
-                    purchaseCost
-                }
-            }
-        }
-
-        if (bestCandidate) {
-            const bestCandidateItem = items.find((element) => element.name == bestCandidate.name);
-            bestCandidateItem.count += bestCandidate.finalCount;
-            totalTera += bestCandidate.addedTera;
-            if (!purchasePlan.find(element => element.name == bestCandidate.name)) {
-                purchasePlan.push(bestCandidateItem);
-            }
-        }
-    }
-    console.log(purchasePlan);
-    return purchasePlan;
-}
-
-/**
- * @name {} 구매계획 랜더링
- * @param {Item[]} purchasePlan 
- */
-const renderPurchasePlan = (purchasePlan) => {
-    const container = document.querySelector(`#average-item-list`);
-
-    if (!purchasePlan || purchasePlan.length === 0) return;
-    
-    const sortedPlan = purchasePlan.sort((a, b) => (b.receiveTera * b.count) - (a.receiveTera * a.count));
-
-    let html = ``;
+    let html = '';
     let totalTera = 0;
     let totalCost = 0;
 
     html = sortedPlan.map(item => {
-        const tera = Math.round(item.receiveTera) * item.count;
+        const tera = Math.round(item[scenario.id] * item.cash * item.count);
         const cost = item.cash * item.count;
         totalTera += tera;
         totalCost += cost;
+
         return `<p>${item.name} : ${item.count}개 (${tera})</p>`;
-    }).join('') + `
-    <p>총 테라 : ${totalTera} 테라</p>
+    }).join('')
+    + `<p>총 테라 : ${totalTera} 테라</p>
     <p>총 비용 : ${totalCost} 원</p>`;
 
     container.innerHTML = html;
 }
 
-/**
- * @name {} 목표테라 input 입력 이벤트 함수 
- * @event
- * @param {*} inputEvent 
- */
-const onNeededForTeraInput = (e) => {
-    const purchasePlan = getGreedyPurchasePlan(e.target.value);
-    renderPurchasePlan(purchasePlan);
-}
+const purchaseScenarios = [
+    {
+        id: "current",
+        container: document.querySelector('#average-item-list')
+    },
+    {
+        id: "plus",
+        container: document.querySelector('#plus-item-list')
+    },
+    {
+        id: "minus",
+        container: document.querySelector('#minus-item-list')
+    }
+]
 
 /**
  * @name {} 일일 구매제한 유효성 체크
  * @param {Item} item 
  * @param {Number} maxCount 
- * @returns {Number} availablePurchaseCount
  */
 const getAvailableCount = (item, maxCount) => {
     return Math.min(item.limit ?? Infinity, maxCount);
 }
 
 /**
- * @name 이벤트 주입 함수
+ * @name {} 그리디를 이용한 구매계획
+ * @param {Number} value
+ * @param { ScenarioId } scenarioId
+ */
+const getGreedyPurchasePlan = (value, scenarioId) => {
+    const targetTera = value;
+    const minimumTeraAmount = Math.min(...items.map(item => item[scenarioId] * item.cash));
+
+    // 목표 테라가 최소 테라보다 적음
+    if ( targetTera < minimumTeraAmount ) return []; 
+
+    const sortedItemsOrderByRate = [...items].sort(
+        (a, b) => Number(b[scenarioId]) - Number(a[scenarioId])
+    );
+
+    const purchasePlan = [];
+    let totalTera = 0;
+
+    for ( const item of sortedItemsOrderByRate ) {
+        if ( totalTera >= targetTera ) break;
+
+        const remainingTera = targetTera - totalTera;
+        const maxCount = Math.floor(remainingTera / Number(item[scenarioId] * item.cash));
+        const finalCount = getAvailableCount(item, maxCount);
+
+        if ( finalCount > 0 ) {
+            purchasePlan.push(
+                {
+                    ...item,
+                    count: finalCount
+                }
+            )
+            
+            totalTera += finalCount * Number(item[scenarioId] * item.cash);
+        }
+    }
+
+    return purchasePlan;
+}
+
+/**
+ * @name {} 경매장 테라 가격 input 이벤트 함수
+ * @event
+ */
+const onAuctionPriceInput = (item, price) => {
+    const avgRate = calculateTeraPerWon(item, price);
+    const plusRate = calculateTeraPerWon(item, price * (1 + PRICE_TICK));
+    const minusRate = calculateTeraPerWon(item, price * (1 - PRICE_TICK));
+
+    updateItemRate(item, avgRate, plusRate, minusRate);
+    renderTeraPerWon(item);
+}
+
+/**
+ * @name {} 필요한 테라 가격 input 이벤트 함수
+ * @event
+ */
+const onNeededForTeraInput = (value) => {
+    purchaseScenarios.map((scenario) => {
+        const purchasePlan = getGreedyPurchasePlan(Number(value), scenario.id);
+        renderPurchasePlan(purchasePlan, scenario);
+    }) 
+    
+}
+
+/**
+ * @name {} 이벤트 주입 함수
+ * @event
  */
 const addInputEvents = () => {
     items.forEach((item) => {
@@ -233,7 +220,7 @@ const addInputEvents = () => {
 
     const teraInput = document.querySelector('#target-tera');
     if (teraInput) {
-        teraInput.addEventListener('input', onNeededForTeraInput);
+        teraInput.addEventListener('input', (e) => onNeededForTeraInput(e.target.value));
     }
 }
 
@@ -241,8 +228,6 @@ const init = () => {
     initRender(main, items);
     addInputEvents();
 }
-
-console.log([25041, 62911, 784329]);
 
 init();
 
