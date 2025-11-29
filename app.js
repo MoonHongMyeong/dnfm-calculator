@@ -1,3 +1,5 @@
+import { ExchangeSection } from "./exchange/exchange.js";
+
 let menus;
 let sections;
 
@@ -23,12 +25,16 @@ const addEvents = () => {
 
 const init = () => {
     menus = document.querySelectorAll('.menu');
-    sections = document.querySelectorAll('.section'); 
+    sections = document.querySelectorAll('.section');
+    const exchangeSection = document.querySelector('#exchange');
+
+    const exchange = new ExchangeSection(exchangeSection);
+    exchange.initRender();
 
     addEvents();
 
     // 초기 섹션 지정
-    const firstMenu = Array.from(menus).find(menu => menu.dataset.id === "dps-calc");
+    const firstMenu = Array.from(menus).find(menu => menu.dataset.id === "exchange");
     if (firstMenu) navigate(firstMenu.dataset.id);
 }
 

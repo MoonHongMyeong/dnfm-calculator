@@ -15,7 +15,96 @@
             <span class="menu" data-id="dps-calc">딜량 계산기</span>
         </div>
     </header>
-    <main class="section" id="exchange">환전계산기</main>
-    <main class="section" id="dps-calc">딜량계산기</main>
+    <!-- 환전 계산기 -->
+    <main class="section" id="exchange">
+        <!-- 판매 대상 테이블 -->
+        <table id="exchange-items-table">
+            <thead>
+                <tr>
+                    <td>아이템명</td>
+                    <td>판매가격(원)</td>
+                    <td>판매목표가(테라)</td>
+                    <td>효율-5%(테라/원)</td>
+                    <td>기준 효율(테라/원)</td>
+                    <td>효율+5%(테라/원)</td>
+                </tr>
+            </thead>
+            <tbody id="exchange-items-tbody">
+                
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td>행 추가</td>
+                </tr>
+            </tfoot>
+        </table>
+        <!-- exchange-items-tbody's template -->
+        <template id="exchange-item-row-template">
+            <tr class="exchange-item-row" data-item-id="">
+                <td class="col-item-name">
+                    <input
+                        type="text"
+                        name="itemName"
+                        class="item-name"
+                        autocomplete="off"
+                    />
+                </td>
+                <td class="col-price-won">
+                    <input
+                        type="number"
+                        name="priceWon"
+                        class="price-won"
+                        inputmode="decimal"
+                        min="0"
+                        step="1"
+                    />
+                </td>
+                <td class="col-target-price">
+                    <input
+                        type="number"
+                        class="target-price"
+                        name="targetPrice"
+                        inputmode="decimal"
+                        min="0"
+                        step="1"
+                    />
+                </td>
+                <td class="col-target-minus-5">
+                    <span class="target-minus-5">-</span>
+                </td>
+                <td class="col-target-base">
+                    <span class="target-base">-</span>
+                </td>
+                <td class="col-target-plus-5">
+                    <span class="target-plus-5">-</span>
+                </td>
+                <td class="col-actions">
+                    <button type="button" class="btn-remove-exchange-row">삭제</button>
+                </td>
+            </tr>
+        </template>
+
+        <!-- 판매 계획 테이블 -->
+        <table id="exchange-plan-table">
+            <thead>
+
+            </thead>
+            <tbody id="exchange-plan-tbody">
+
+            </tbody>
+        </table>
+    </main>
+
+
+
+
+
+
+
+
+    <!-- 딜량 계산기 -->
+    <main class="section" id="dps-calc">
+
+    </main>
 </body>
 </html>
