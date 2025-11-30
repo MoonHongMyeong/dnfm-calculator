@@ -5,7 +5,9 @@ export class ExchangeSection {
     constructor(rootElement){
         this.rootElement = rootElement;
         this.exchangeItemsTbody = rootElement.querySelector('#exchange-items-tbody');
+        this.addRowsButton = rootElement.querySelector('#exchange-items-tfoot')
         this.exchangeItemTemplate = rootElement.querySelector('#exchange-item-row-template');
+        this.exchangePlanTbody = rootElement.querySelector('#exchange-plan-tbody');
     }
 
     /**
@@ -36,6 +38,17 @@ export class ExchangeSection {
     }
 
     /**
+     * @description 판매 리스트 추가
+     */
+    addRows() {
+        const cloneTemplate = this.exchangeItemTemplate.content.cloneNode(true);
+        const lastId = this.exchangeItemsTbody.querySelector('tr:last-child').dataset.itemId;
+    
+        cloneTemplate.querySelector('tr').dataset.itemId = (Number(lastId) + 1);
+
+        this.exchangeItemsTbody.append(cloneTemplate);
+    }
+    /**
      * @description 이벤트 바인딩
      */
     bindEvents() {
@@ -47,6 +60,10 @@ export class ExchangeSection {
             if (!row) return;
 
             this.updateTargetPricesForRow(row);
+        });
+
+        this.addRowsButton.addEventListener('click', (e) => {
+            this.addRows();
         })
     }
 
@@ -76,7 +93,6 @@ export class ExchangeSection {
         minus5Cell.textContent = minus5.toLocaleString();
         baseCell.textContent   = base.toLocaleString();
         plus5Cell.textContent  = plus5.toLocaleString();
-        
     }
 
     /**

@@ -32,15 +32,15 @@
             <tbody id="exchange-items-tbody">
                 
             </tbody>
-            <tfoot>
+            <tfoot id="exchange-items-tfoot">
                 <tr>
-                    <td>행 추가</td>
+                    <td colspan="6"><button id="exchange-item-add">+</button></td>
                 </tr>
             </tfoot>
         </table>
         <!-- exchange-items-tbody's template -->
         <template id="exchange-item-row-template">
-            <tr class="exchange-item-row" data-item-id="">
+            <tr class="exchange-item-row">
                 <td class="col-item-name">
                     <input
                         type="text"
@@ -87,10 +87,28 @@
         <!-- 판매 계획 테이블 -->
         <table id="exchange-plan-table">
             <thead>
-
+                <tr>
+                    <td>목표 테라 값</td>
+                    <td>구매 조합1</td>
+                    <td>구매 조합2</td>
+                    <td>구매 조합3</td>
+                </tr>
             </thead>
             <tbody id="exchange-plan-tbody">
-
+                <tr class="exchange-plan-row">
+                    <td id="plan-goal-tera">
+                        <input type="number" name="planGoal" class="plan-goal">
+                    </td>
+                    <td id="plan-combo-greedy"></td>
+                    <td id="plan-combo-dp-lower"></td>
+                    <td id="plan-combo-dp-upper"></td>
+                </tr>
+                <tr>
+                    <td>합계</td>
+                    <td id="plan-total-greedy"></td>
+                    <td id="plan-total-dp-lower"></td>
+                    <td id="plan-total-dp-upper"></td>
+                </tr>
             </tbody>
         </table>
     </main>
