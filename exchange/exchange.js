@@ -43,11 +43,17 @@ export class ExchangeSection {
     addRows() {
         const cloneTemplate = this.exchangeItemTemplate.content.cloneNode(true);
         const lastId = this.exchangeItemsTbody.querySelector('tr:last-child').dataset.itemId;
-    
-        cloneTemplate.querySelector('tr').dataset.itemId = (Number(lastId) + 1);
+        const newId = Number(lastId) + 1
+
+        cloneTemplate.querySelector('tr').dataset.itemId = newId;
 
         this.exchangeItemsTbody.append(cloneTemplate);
     }
+    
+    removeRow(row){
+        row.remove();
+    }
+
     /**
      * @description 이벤트 바인딩
      */
@@ -62,9 +68,19 @@ export class ExchangeSection {
             this.updateTargetPricesForRow(row);
         });
 
+        this.exchangeItemsTbody.addEventListener('click', (e) => {
+            const target = e.target;
+            if (!target.classList.contains('btn-remove-exchange-row')) return;
+
+            const row = target.closest('.exchange-item-row');
+            if (!row) return;
+
+            this.removeRow(row);
+        });
+
         this.addRowsButton.addEventListener('click', (e) => {
             this.addRows();
-        })
+        });
     }
 
     /**
