@@ -10,5 +10,8 @@ export const exchangeItems = [
     },
     {
         id: 3, name: '주또주', cash: 39800, limit: Infinity
+    },
+    {
+        id: 4, name: '마스터계약', cash: 5000, limit: Infinity
     }
 ];
